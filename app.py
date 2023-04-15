@@ -21,7 +21,7 @@ fig = px.box(df, y='price', x='bedrooms',)
 fig.update(layout_yaxis_range = [0,10e6])
 fig.update(layout_xaxis_range = [0,6.5])
 fig.update_layout(
-    height=1000,
+    # height=1000,
     paper_bgcolor="LightSteelBlue",
 )
 #%%
