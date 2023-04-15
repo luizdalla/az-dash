@@ -17,13 +17,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 df = pd.read_csv(os.path.join(dir_path, 'data', 'df_real_state.csv'))
 
 
-fig = px.box(df, y='price', x='bedrooms',)
-fig.update(layout_yaxis_range = [0,10e6])
-fig.update(layout_xaxis_range = [0,6.5])
-fig.update_layout(
-    # height=1000,
-    paper_bgcolor="LightSteelBlue",
-)
+
 #%%
 
 
@@ -54,17 +48,90 @@ navbar = dbc.NavbarSimple(
 app.layout = html.Div(children=[
     navbar,
     
-    html.H1(children='Vitoria - Real State'),
+    html.Div([html.H3(children='Vitoria - Informacoes de Mercado Imobiliario'),]),
 
-    html.Div(children='''ß
-        This is Dash running on Azure App Service.
-    '''),
+    # html.Div(children='''
+    #     This is Dash running on Azure App Service.
+    # '''),
     
+    dbc.Row([
+        dbc.Col(html.H6("Selecione o Bairro"),),
+        dbc.Col(html.H6("Numero de imoveis"),),
+    ]),
+    
+    
+    dbc.Row([dbc.Col(
+        html.Div([
+        dcc.Dropdown(id='my-input',
+                    options=df['bairro'].unique(),
+                    multi=False,
+                    ),
+        ]),),
+        dbc.Col(html.Div(id='my-output'),),
+        ]),
+    
+    dbc.Row(html.H1(' ')),
+    
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='box1'),))),
+    dbc.Row(html.H1('')),
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='box2'),))),
+], style={"padding": "15px"})
 
-    dcc.Graph(figure=fig),
-])
 
 
+# @app.callback(
+#     dash.dependencies.Output(component_id='my-output', component_property='children'),
+#     [dash.dependencies.Input(component_id='my-input', component_property='value')]
+# )
+# def update_output_div(input_value):
+#     return 'Saída: {}'.format(input_value)
+
+@app.callback(
+    dash.dependencies.Output('box1', 'figure'),
+    dash.dependencies.Output('box2', 'figure'),
+    dash.dependencies. Output('my-output', 'children'),
+    [dash.dependencies.Input('my-input', 'value')])
+def update_figure(bairro):
+    print(bairro)
+    
+    if bairro==None:
+        filtered_df = df
+        n_imoveis = df.shape[0]
+    else:
+        filtered_df = df[df['bairro'] == bairro]
+        n_imoveis = filtered_df.shape[0]
+
+    # fig = px.scatter(filtered_df, x="gdpPercap", y="lifeExp", 
+    #                  size="pop", color="continent", hover_name="country", 
+    #                  log_x=True, size_max=55)
+    
+    fig = px.box(filtered_df, y='price', x='bedrooms',)
+    fig.update(layout_yaxis_range = [0,10e6])
+    fig.update(layout_xaxis_range = [0,6.5])
+    fig.update_layout(
+        title='Preço (R$) x Quartos',
+        xaxis_title="Quartos",
+        yaxis_title="Preço (R$)",
+        paper_bgcolor="LightSteelBlue",
+        font=dict(size=18,),
+        transition_duration=500
+    )
+
+    fig2 = px.box(filtered_df, y='price', x='vacancies',)
+    fig2.update(layout_yaxis_range = [0,15e6],)
+    fig2.update(layout_xaxis_range = [0,5.5])
+    fig2.update_layout(
+        title='Preço (R$) x Vagas de Garagem',
+        xaxis_title="Vagas de Garagem",
+        yaxis_title="Preço (R$)",
+        paper_bgcolor="LightSteelBlue",
+        font=dict(size=18,),
+        transition_duration=500
+    )
+
+    # fig.update_layout(transition_duration=500)
+
+    return fig, fig2, n_imoveis
 
 #%%
 server = app.server
