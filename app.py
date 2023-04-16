@@ -16,8 +16,6 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 df = pd.read_csv(os.path.join(dir_path, 'data', 'df_real_state.csv'))
 
-
-
 #%%
 
 
@@ -56,6 +54,7 @@ app.layout = html.Div(children=[
     
     dbc.Row([
         dbc.Col(html.H6("Selecione o Bairro"),),
+        dbc.Col(html.H6("Selecione Quartos"),),
         dbc.Col(html.H6("Numero de imoveis"),),
     ]),
     
@@ -66,7 +65,12 @@ app.layout = html.Div(children=[
                     options=df['bairro'].unique(),
                     multi=False,
                     ),
+
         ]),),
+        dbc.Col(    dcc.Dropdown(id='my-input2',
+                    options=df['bedrooms'].unique(),
+                    multi=False,
+                    ),),
         dbc.Col(html.Div(id='my-output'),),
         ]),
     
@@ -75,6 +79,8 @@ app.layout = html.Div(children=[
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='box1'),))),
     dbc.Row(html.H1('')),
     dbc.Row(dbc.Col(html.Div(dcc.Graph(id='box2'),))),
+        dbc.Row(html.H1('')),
+    dbc.Row(dbc.Col(html.Div(dcc.Graph(id='box3'),))),
 ], style={"padding": "15px"})
 
 
@@ -89,41 +95,57 @@ app.layout = html.Div(children=[
 @app.callback(
     dash.dependencies.Output('box1', 'figure'),
     dash.dependencies.Output('box2', 'figure'),
+    dash.dependencies.Output('box3', 'figure'),
     dash.dependencies. Output('my-output', 'children'),
-    [dash.dependencies.Input('my-input', 'value')])
-def update_figure(bairro):
-    print(bairro)
+    [dash.dependencies.Input('my-input', 'value'),
+     dash.dependencies.Input('my-input2', 'value'),])
+def update_figure(bairro, bedrooms):
     
-    if bairro==None:
+    if bairro==None and bedrooms==None:
         filtered_df = df
-        n_imoveis = df.shape[0]
-    else:
+        n_imoveis = filtered_df.shape[0]
+    elif bairro==None and bedrooms!=None:
+        filtered_df = df[df['bedrooms'] == bedrooms]
+        n_imoveis = filtered_df.shape[0]
+    elif bairro!=None and bedrooms==None:
         filtered_df = df[df['bairro'] == bairro]
         n_imoveis = filtered_df.shape[0]
-
-    # fig = px.scatter(filtered_df, x="gdpPercap", y="lifeExp", 
-    #                  size="pop", color="continent", hover_name="country", 
-    #                  log_x=True, size_max=55)
+    elif bairro!=None and bedrooms!=None:
+        filtered_df = df[(df['bairro'] == bairro) & (df['bedrooms'] == bedrooms)]
+        n_imoveis = filtered_df.shape[0]
     
     fig = px.box(filtered_df, y='price', x='bedrooms',)
     fig.update(layout_yaxis_range = [0,10e6])
     fig.update(layout_xaxis_range = [0,6.5])
     fig.update_layout(
-        title='Preço (R$) x Quartos',
+        title='Numero de Quartos',
         xaxis_title="Quartos",
         yaxis_title="Preço (R$)",
         paper_bgcolor="LightSteelBlue",
         font=dict(size=18,),
         transition_duration=500
     )
+    
 
     fig2 = px.box(filtered_df, y='price', x='vacancies',)
     fig2.update(layout_yaxis_range = [0,15e6],)
     fig2.update(layout_xaxis_range = [0,5.5])
     fig2.update_layout(
-        title='Preço (R$) x Vagas de Garagem',
+        title='Vagas de Garagem',
         xaxis_title="Vagas de Garagem",
         yaxis_title="Preço (R$)",
+        paper_bgcolor="LightSteelBlue",
+        font=dict(size=18,),
+        transition_duration=500
+    )
+    
+    fig3 = px.box(filtered_df, y='condo_fee', x='bedrooms',)
+    fig3.update(layout_yaxis_range = [0,5e3],)
+    fig3.update(layout_xaxis_range = [0,5.5])
+    fig3.update_layout(
+        title='Condoominio',
+        xaxis_title="Quartos",
+        yaxis_title="Condominio (R$)",
         paper_bgcolor="LightSteelBlue",
         font=dict(size=18,),
         transition_duration=500
@@ -131,7 +153,7 @@ def update_figure(bairro):
 
     # fig.update_layout(transition_duration=500)
 
-    return fig, fig2, n_imoveis
+    return fig, fig2, fig3, n_imoveis
 
 #%%
 server = app.server
